@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Globe, Shield, Sparkles, Zap } from "lucide-react";
+import Image from "next/image";
 
 export default function LandingPage() {
    return (
@@ -43,7 +44,7 @@ export default function LandingPage() {
             <div className="max-w-3xl mx-auto">
                <div className="flex items-center justify-center mb-4">
                   <h1 className="text-4xl md:text-6xl font-bold text-white ml-4">
-                     Soca
+                     SOCA - Soneium Chat
                   </h1>
                </div>
 
@@ -129,7 +130,12 @@ export default function LandingPage() {
             <div className="max-w-7xl mx-auto">
                <div className="flex flex-col sm:flex-row justify-between items-center mb-4">
                   <div className="flex items-center mb-4 sm:mb-0">
-                     <div className="h-8 w-8 rounded-full bg-primary"></div>
+                     <Image
+                        src={"/logo.png"}
+                        alt="Logo"
+                        width={30}
+                        height={30}
+                     />
                      <span className="text-white font-bold ml-2">
                         Soneium Chat
                      </span>

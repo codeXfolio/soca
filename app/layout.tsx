@@ -3,12 +3,14 @@ import { Inter } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/toaster";
 import { OnboardingProvider } from "@/components/onboarding/onboarding-provider";
+import { PrivyProvider } from "@privy-io/react-auth";
+import { soneiumMinato } from "viem/chains";
 import "./globals.css";
-
+import { AppKit } from "./context/appkit";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata = {
-   title: "Soneium Chat - Web3 AI Assistant",
+   title: "SOCA - Web3 AI Assistant",
    description: "Your intelligent companion for Web3 interactions",
 };
 
@@ -27,8 +29,10 @@ export default function RootLayout({
                disableTransitionOnChange
             >
                <OnboardingProvider>
-                  {children}
-                  <Toaster />
+                  <AppKit>
+                     {children}
+                     <Toaster />
+                  </AppKit>
                </OnboardingProvider>
             </ThemeProvider>
          </body>
