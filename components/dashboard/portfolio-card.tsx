@@ -13,20 +13,13 @@ interface Token {
    name: string;
    amount: number;
    value: number;
-   change: number;
 }
 
 interface PortfolioCardProps {
    tokens: Token[];
-   totalValue: number;
-   nftCount: number;
 }
 
-export function PortfolioCard({
-   tokens,
-   totalValue,
-   nftCount,
-}: PortfolioCardProps) {
+export function PortfolioCard({ tokens }: PortfolioCardProps) {
    return (
       <Card className="bg-card portfolio-card">
          <CardHeader className="pb-3">
@@ -51,7 +44,10 @@ export function PortfolioCard({
                         <div>
                            <p className="font-medium">{token.name}</p>
                            <p className="text-sm text-muted-foreground">
-                              {token.amount} {token.symbol}
+                              {token.amount < 1
+                                 ? token.amount.toFixed(5)
+                                 : token.amount}{" "}
+                              {token.symbol}
                            </p>
                         </div>
                      </div>
@@ -59,25 +55,6 @@ export function PortfolioCard({
                         <p className="font-medium">
                            ${token.value.toLocaleString()}
                         </p>
-                        <div className="flex items-center gap-1 text-sm">
-                           {token.change > 0 ? (
-                              <>
-                                 <TrendingUp className="h-3 w-3 text-green-500" />
-                                 <span className="text-green-500">
-                                    +{token.change}%
-                                 </span>
-                              </>
-                           ) : token.change < 0 ? (
-                              <>
-                                 <TrendingDown className="h-3 w-3 text-red-500" />
-                                 <span className="text-red-500">
-                                    {token.change}%
-                                 </span>
-                              </>
-                           ) : (
-                              <span className="text-muted-foreground">0%</span>
-                           )}
-                        </div>
                      </div>
                   </div>
                ))}

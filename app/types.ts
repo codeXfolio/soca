@@ -6,3 +6,12 @@ export interface NetworkApiResponse {
    gasPrice: string;
    message?: string;
 }
+
+export interface OverviewApiResponse {
+   result: Result;
+   balance: string;
+   nonce: number;
+   totalPortfolioValue: string;
+   totalStakedValue: string;
+   message?: string;
+}

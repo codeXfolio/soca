@@ -40,7 +40,7 @@ export default function LandingPage() {
          </div>
 
          {/* Hero section */}
-         <main className="flex-1 flex flex-col items-center justify-center px-4 py-36 text-center">
+         <main className="flex-1 flex flex-col items-center justify-center px-4 py-36 lg:py-56 text-center">
             <div className="max-w-3xl mx-auto">
                <div className="flex items-center justify-center mb-4">
                   <h1 className="text-4xl md:text-6xl font-bold text-white ml-4">
@@ -73,7 +73,7 @@ export default function LandingPage() {
          </main>
 
          {/* Values section */}
-         <section className="py-16 px-4 md:px-16 relative z-10 backdrop-blur-sm bg-black/30">
+         <section className="py-24 px-4 md:px-16 relative z-10 backdrop-blur-sm bg-black/30">
             <div className="max-w-7xl mx-auto">
                <h2 className="text-3xl md:text-4xl font-bold text-white text-center mb-12">
                   Why Choose <span className="text-primary">Soneium Chat</span>

@@ -1,12 +1,9 @@
 import { ethers } from "ethers";
 import { NextResponse } from "next/server";
+import { provider } from "../helper";
 
 export async function GET() {
    try {
-      const provider = new ethers.JsonRpcProvider(
-         "https://soneium-minato.rpc.scs.startale.com?apikey=" +
-            process.env.SCS_API_KEY
-      );
       const [blockNumber, feeData] = await Promise.all([
          provider.getBlockNumber(),
          provider.getFeeData(),
