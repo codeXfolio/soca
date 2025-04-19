@@ -348,7 +348,9 @@ export function AssistantLayout() {
             <CommandSuggestions onCommandClick={handleSendMessage} />
             <ChatInputBox onSendMessage={handleSendMessage} />
          </div>
-         {messages.length === 1 && <AssistantToolTip />}
+         {!window.localStorage.getItem("assistantTooltipDismissed") && (
+            <AssistantToolTip />
+         )}
 
          <TransactionConfirmModal
             isOpen={showTransactionModal}

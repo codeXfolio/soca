@@ -22,6 +22,7 @@ interface Transaction {
    time: string;
    amount: string;
    status: string;
+   hash: string;
 }
 
 interface RecentActivityCardProps {
@@ -55,7 +56,16 @@ export function RecentActivityCard({ transactions }: RecentActivityCardProps) {
          <CardContent>
             <div className="space-y-4">
                {transactions.map((tx, index) => (
-                  <div key={index} className="flex items-center gap-4">
+                  <div
+                     key={index}
+                     className="flex items-center gap-4 cursor-pointer"
+                     onClick={() => {
+                        window.open(
+                           `https://soneium-minato.blockscout.com/tx/${tx.hash}`,
+                           "_blank"
+                        );
+                     }}
+                  >
                      <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary/10">
                         {getTransactionIcon(tx.type)}
                      </div>

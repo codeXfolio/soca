@@ -13,6 +13,7 @@ interface Transaction {
    time: string;
    amount: string;
    status: string;
+   hash: string;
 }
 
 interface Token {
@@ -93,6 +94,7 @@ export function DashboardOverview() {
             time: new Date(tx.timestamp).toLocaleString(),
             amount: ethers.formatEther(tx.value),
             status: tx.status == "ok" ? "Completed" : "Failed",
+            hash: tx.hash,
          }));
          setActivity(transactions);
       }
