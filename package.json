@@ -42,6 +42,7 @@
     "@reown/appkit": "^1.7.3",
     "@reown/appkit-adapter-ethers": "^1.7.3",
     "autoprefixer": "^10.4.20",
+    "cheerio": "^1.0.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "cmdk": "1.0.4",
