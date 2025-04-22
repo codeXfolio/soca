@@ -44,7 +44,7 @@ export function ContractAnalyzer({ onClose }: ContractAnalyzerProps) {
       setError(null);
 
       const res = await fetch(
-         `https://soneium-minato.blockscout.com/api/v2/smart-contracts/${address}`
+         `${process.env.NEXT_PUBLIC_BLOCKSCOUT_API_URL}/api/v2/smart-contracts/${address}`
       );
       if (!res.ok) {
          setIsAnalyzing(false);

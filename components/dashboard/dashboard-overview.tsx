@@ -81,7 +81,7 @@ export function DashboardOverview() {
          if (!address) return;
 
          const response = await fetch(
-            `https://soneium-minato.blockscout.com/api/v2/addresses/${address}/transactions?filter=to|from`
+            `${process.env.NEXT_PUBLIC_BLOCKSCOUT_API_URL}/api/v2/addresses/${address}/transactions?filter=to|from`
          );
          const data = await response.json();
          const transactions: Transaction[] = data.items.map((tx: any) => ({
@@ -101,12 +101,14 @@ export function DashboardOverview() {
 
       async function fetchPortfolio() {
          if (!address) return;
-         const res = await fetch(
-            `https://soneium-minato.blockscout.com/api/v2/addresses/${address}`
-         );
-         const response = await fetch(
-            `https://soneium-minato.blockscout.com/api/v2/addresses/${address}/tokens?type=ERC-20`
-         );
+         const [res, response] = await Promise.all([
+            fetch(
+               `${process.env.NEXT_PUBLIC_BLOCKSCOUT_API_URL}/api/v2/addresses/${address}`
+            ),
+            fetch(
+               `${process.env.NEXT_PUBLIC_BLOCKSCOUT_API_URL}/api/v2/addresses/${address}/tokens?type=ERC-20`
+            ),
+         ]);
          const ethPrice = await fetchEthPrice();
          const data = await response.json();
          const data2 = await res.json();

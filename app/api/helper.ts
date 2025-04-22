@@ -1,4 +1,5 @@
 import { ethers } from "ethers";
+import { TransactionResponse } from "./types";
 
 export const provider = new ethers.JsonRpcProvider(
    "https://soneium-minato.rpc.scs.startale.com?apikey=" +
@@ -40,4 +41,47 @@ export async function openrouterRequest(messages: any, prompt: string) {
 
    const content = json.choices[0].message.content;
    return content;
+}
+
+export async function checkBalance(address: string) {
+   const balance = await provider.getBalance(address);
+   return ethers.formatEther(balance);
+}
+
+export async function checkTokenBalance(address: string, token: string) {
+   const abi = [
+      "function balanceOf(address owner) view returns (uint256)",
+      "function decimals() view returns (uint8)",
+      "function symbol() view returns (string)",
+   ];
+   const contract = new ethers.Contract(token, abi, provider);
+   const balance = await contract.balanceOf(address);
+   return (
+      ethers.formatUnits(balance, await contract.decimals()) +
+      " " +
+      (await contract.symbol())
+   );
+}
+
+export async function checkTransaction(hash: string) {
+   const tx = await provider.getTransaction(hash);
+   return tx;
+}
+
+export async function checkTransactions(address: string) {
+   const response = await fetch(
+      `${process.env.NEXT_PUBLIC_BLOCKSCOUT_API_URL}/api/v2/addresses/${address}/transactions?filter=to|from   `
+   );
+   const data: TransactionResponse = await response.json();
+   const result = data.items.map((tx) => {
+      return {
+         hash: tx.hash,
+         timestamp: tx.timestamp,
+         amount: tx.value,
+         type: tx.method,
+         status: tx.status,
+         direction: tx.from.hash === address ? "out" : "in",
+      };
+   });
+   return result;
 }

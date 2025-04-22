@@ -37,6 +37,7 @@ interface TokenScannerResult {
 }
 interface SecurityResult {
    result: string;
+   message?: string;
    data: {
       overallRating: number;
       critical: string[];
@@ -45,6 +46,7 @@ interface SecurityResult {
       low: string[];
    };
 }
+type Severity = "high" | "medium" | "low" | "critical";
 
 export function TokenScanner({ onClose }: TokenScannerProps) {
    const [tokenAddress, setTokenAddress] = useState("");
@@ -58,7 +60,7 @@ export function TokenScanner({ onClose }: TokenScannerProps) {
       score: number;
       risks: Array<{
          name: string;
-         severity: "high" | "medium" | "low" | "critical";
+         severity: Severity;
       }>;
    } | null>(null);
    const [error, setError] = useState<string | null>(null);
@@ -67,10 +69,11 @@ export function TokenScanner({ onClose }: TokenScannerProps) {
       if (!tokenAddress) return;
 
       setIsScanning(true);
+      setError(null);
 
       const [res, sec] = await Promise.all([
          fetch(
-            `https://soneium-minato.blockscout.com/api/v2/tokens/${tokenAddress}`
+            `${process.env.NEXT_PUBLIC_BLOCKSCOUT_API_URL}/api/v2/tokens/${tokenAddress}`
          ),
          fetch(`/api/scan-token?address=${tokenAddress}`),
       ]);
@@ -92,37 +95,38 @@ export function TokenScanner({ onClose }: TokenScannerProps) {
          ),
          holders: parseInt(data.holders),
          mcap: data.circulating_market_cap,
-         score: data2.data.overallRating,
-         risks: data2.data.critical
-            .map((risk) => ({
-               name: risk,
-               severity: "critical" as "high" | "medium" | "low" | "critical",
-            }))
-            .concat(
-               data2.data.high.map((risk) => ({
-                  name: risk,
-                  severity: "high" as "high" | "medium" | "low" | "critical",
-               }))
-            )
-            .concat(
-               data2.data.medium.map((risk) => ({
-                  name: risk,
-                  severity: "medium" as "high" | "medium" | "low" | "critical",
-               }))
-            )
-            .concat(
-               data2.data.low.map((risk) => ({
-                  name: risk,
-                  severity: "low" as "high" | "medium" | "low" | "critical",
-               }))
-            ),
+         score: data2.result == "error" ? 0 : data2.data.overallRating,
+         risks:
+            data2.result == "error"
+               ? []
+               : data2.data.critical
+                    .map((risk) => ({
+                       name: risk,
+                       severity: "critical" as Severity,
+                    }))
+                    .concat(
+                       data2.data.high.map((risk) => ({
+                          name: risk,
+                          severity: "high" as Severity,
+                       }))
+                    )
+                    .concat(
+                       data2.data.medium.map((risk) => ({
+                          name: risk,
+                          severity: "medium" as Severity,
+                       }))
+                    )
+                    .concat(
+                       data2.data.low.map((risk) => ({
+                          name: risk,
+                          severity: "low" as Severity,
+                       }))
+                    ),
       });
       setIsScanning(false);
    };
 
-   const getSeverityColor = (
-      severity: "high" | "medium" | "low" | "critical"
-   ) => {
+   const getSeverityColor = (severity: Severity) => {
       switch (severity) {
          case "high":
             return "text-red-500 bg-red-500/10 border-red-500/20";
@@ -169,6 +173,14 @@ export function TokenScanner({ onClose }: TokenScannerProps) {
                </div>
             </CardContent>
          </Card>
+
+         {error && (
+            <Card>
+               <CardContent className="text-red-500 flex justify-center py-10">
+                  <h2 className="text-xl">{error}</h2>
+               </CardContent>
+            </Card>
+         )}
 
          {isScanning ? (
             <Card>

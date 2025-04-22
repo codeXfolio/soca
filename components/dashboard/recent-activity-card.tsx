@@ -61,7 +61,7 @@ export function RecentActivityCard({ transactions }: RecentActivityCardProps) {
                      className="flex items-center gap-4 cursor-pointer"
                      onClick={() => {
                         window.open(
-                           `https://soneium-minato.blockscout.com/tx/${tx.hash}`,
+                           `${process.env.NEXT_PUBLIC_BLOCKSCOUT_API_URL}/tx/${tx.hash}`,
                            "_blank"
                         );
                      }}
