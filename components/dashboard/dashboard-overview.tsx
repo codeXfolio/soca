@@ -6,6 +6,7 @@ import { PortfolioCard } from "./portfolio-card";
 import { RecentActivityCard } from "./recent-activity-card";
 import { useEffect, useState } from "react";
 import { ethers } from "ethers";
+import { fetchEthPrice } from "../helper";
 
 interface Transaction {
    type: "Send" | "Receive" | "Swap" | "Deploy" | "Call Contract";
@@ -28,17 +29,6 @@ export function DashboardOverview() {
 
    const [activity, setActivity] = useState<Transaction[] | null>(null);
    const [portfolio, setPortfolio] = useState<Token[] | null>(null);
-
-   async function fetchEthPrice() {
-      const response = await fetch(
-         "https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd"
-      );
-      if (!response.ok) {
-         throw new Error("Failed to fetch ETH price");
-      }
-      const data = await response.json();
-      return data.ethereum.usd;
-   }
 
    function getDirection(from: string, to: string): "in" | "out" | "neutral" {
       if (

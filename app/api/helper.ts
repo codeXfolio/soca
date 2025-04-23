@@ -6,20 +6,24 @@ export const provider = new ethers.JsonRpcProvider(
       process.env.SCS_API_KEY
 );
 
-export async function openrouterRequest(messages: any, prompt: string) {
+export async function openrouterRequest(
+   messages: any,
+   prompt: string,
+   model: string
+) {
    const response = await fetch(
       "https://openrouter.ai/api/v1/chat/completions",
       {
          method: "POST",
          headers: {
             Authorization:
-               "Bearer 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",
+               "Bearer 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",
             // "HTTP-Referer": "<YOUR_SITE_URL>",
             // "X-Title": "<YOUR_SITE_NAME>",
             "Content-Type": "application/json",
          },
          body: JSON.stringify({
-            model: "meta-llama/llama-4-maverick:free",
+            model,
             messages: [
                {
                   role: "system",
@@ -73,7 +77,7 @@ export async function checkTransactions(address: string) {
       `${process.env.NEXT_PUBLIC_BLOCKSCOUT_API_URL}/api/v2/addresses/${address}/transactions?filter=to|from   `
    );
    const data: TransactionResponse = await response.json();
-   const result = data.items.map((tx) => {
+   const result = data.items.slice(0, 6).map((tx) => {
       return {
          hash: tx.hash,
          timestamp: tx.timestamp,

@@ -265,3 +265,43 @@
    pointer-events: none;
    z-index: 55;
 }
+
+/* Table styles */
+table {
+   border-collapse: collapse;
+   width: 100%;
+   margin: 1rem 0;
+}
+
+th,
+td {
+   border: 1px solid rgba(59, 130, 246, 0.7);
+   padding: 0.5rem;
+   text-align: left;
+}
+
+th {
+   font-weight: 600;
+}
+
+/* List styles */
+ul,
+ol {
+   margin: 1rem 0;
+   padding-left: 1.5rem;
+}
+
+ul {
+   list-style-type: disc;
+}
+
+ol {
+   list-style-type: decimal;
+}
+
+ul ul,
+ol ol,
+ul ol,
+ol ul {
+   margin: 0.5rem 0;
+}

@@ -1,5 +1,7 @@
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
+import Markdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 interface ChatBubbleProps {
    message: string;
@@ -19,7 +21,7 @@ export function ChatBubble({ message, sender, time }: ChatBubbleProps) {
             )}
          >
             <div className="space-y-1">
-               <p>{message}</p>
+               <Markdown remarkPlugins={[remarkGfm]}>{message}</Markdown>
                <p className={cn("text-right text-xs opacity-70")}>
                   {format(time, "h:mm a")}
                </p>

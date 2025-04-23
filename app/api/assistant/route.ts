@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
-import { prompt } from "./prompt";
+import { prompt as systemPrompt } from "./prompt";
 import {
    checkBalance,
    checkTokenBalance,
    checkTransaction,
    checkTransactions,
-   openrouterRequest,
    provider,
 } from "../helper";
 import { ethers } from "ethers";
+import { Chat, PrismaClient } from "@/lib/generated/prisma";
 
 interface ResultResponse {
    action: string;
@@ -48,7 +48,7 @@ async function handleCheckBalance(response: ResultResponse) {
       const balance = await checkBalance(address);
       return {
          action: "check_balance",
-         response: `Your balance is **${balance} ETH**`,
+         response: `Your balance is **${parseFloat(balance).toFixed(5)} ETH**`,
       };
    }
 
@@ -79,17 +79,18 @@ async function handleCheckTransaction(hash: string) {
    }
 
    const details = [
-      `**Transaction Hash:** ${tx.hash}`,
       `**Block:** ${tx.blockNumber}`,
       `**From:** ${tx.from}`,
       `**To:** ${tx.to}`,
-      `**Value:** ${tx.value}`,
+      `**Value:** ${parseFloat(
+         ethers.formatEther(tx.value)
+      ).toLocaleString()} ETH`,
       `**Timestamp:** ${new Date(block.timestamp * 1000).toLocaleString()}`,
-   ].join("\n");
+   ].join("\n\n");
 
    return {
       action: "check_tx",
-      response: `Here is the transaction details:\n${details}`,
+      response: `Here is the transaction details:\n\n${details}`,
    };
 }
 
@@ -98,7 +99,7 @@ async function handleCheckTxs(address: string) {
 
    return {
       action: "check_txs",
-      data: { txs },
+      data: txs,
       response: "Here are the transaction history",
    };
 }
@@ -108,22 +109,33 @@ async function handleCheckToken(address: string) {
       `${process.env.NEXT_PUBLIC_BLOCKSCOUT_API_URL}/api/v2/tokens/${address}`
    );
    const data: TokenScannerResult = await response.json();
+   const tokenDetails = [
+      `**Name:** ${data.name}`,
+      `**Symbol:** ${data.symbol}`,
+      `**Total Supply:** ${parseFloat(
+         ethers.formatUnits(data.total_supply, parseInt(data.decimals))
+      ).toLocaleString()}`,
+      `**Holders:** ${data.holders}`,
+      `**Market Cap:** ${
+         data.circulating_market_cap
+            ? parseFloat(
+                 ethers.formatUnits(
+                    data.circulating_market_cap,
+                    parseInt(data.decimals)
+                 )
+              ).toLocaleString()
+            : "N/A"
+      }`,
+   ];
    return {
       action: "check_token",
-      data: {
-         name: data.name,
-         symbol: data.symbol,
-         total_supply: data.total_supply,
-         holders: data.holders,
-         circulating_market_cap: data.circulating_market_cap,
-      },
-      response: "Here is the token details",
+      response: `Here is the token details:\n\n\n${tokenDetails.join("\n\n")}`,
    };
 }
 
 export async function POST(request: Request) {
    try {
-      const { messages } = await request.json();
+      const { messages, model, signature } = await request.json();
 
       if (!messages?.length) {
          return NextResponse.json(
@@ -132,15 +144,99 @@ export async function POST(request: Request) {
          );
       }
 
-      const result = await openrouterRequest(messages, prompt);
-      console.log(result);
+      if (messages.length > 1000) {
+         return NextResponse.json(
+            { error: "Messages limit exceeded" },
+            { status: 400 }
+         );
+      }
+
+      if (!model) {
+         return NextResponse.json(
+            { error: "No model provided" },
+            { status: 400 }
+         );
+      }
+
+      const verified = ethers.verifyMessage("Welcome to SOCA", signature);
+
+      if (!verified) {
+         return NextResponse.json(
+            { error: "Invalid signature" },
+            { status: 400 }
+         );
+      }
+
+      const prisma = new PrismaClient();
+      const chats = await prisma.chat.findMany({
+         where: {
+            address: verified.toUpperCase(),
+         },
+         orderBy: {
+            createdAt: "desc",
+         },
+         take: 8,
+      });
+      const prompt: { role: string; content: string }[] = chats.map(
+         (chat: Chat) => ({
+            role: chat.role,
+            content: chat.message,
+         })
+      );
+      prompt.reverse();
+      prompt.push({
+         role: "user",
+         content: messages,
+      });
+      prompt.unshift({
+         role: "system",
+         content: systemPrompt,
+      });
+
+      const result = await openrouterRequest(prompt, model);
+
       const response: ResultResponse = JSON.parse(
          result.replace(/```json|```/g, "")
       );
 
+      if (chats.length >= 8) {
+         await prisma.chat.deleteMany({
+            where: {
+               AND: [
+                  {
+                     address: verified.toUpperCase(),
+                  },
+                  {
+                     id: { in: chats.slice(6, 8).map((chat) => chat.id) },
+                  },
+               ],
+            },
+         });
+      }
+
+      await prisma.chat.create({
+         data: {
+            address: verified.toUpperCase(),
+            message: messages,
+            role: "user",
+         },
+      });
+
+      await prisma.chat.create({
+         data: {
+            address: verified.toUpperCase(),
+            message: JSON.stringify(response),
+            role: "system",
+         },
+      });
+
       switch (response.action) {
          case "info":
-            return NextResponse.json(JSON.parse(result));
+            const newResult = {
+               action: "info",
+               response: response.response.replace(/(?<=.)\n(?=.)/g, "\n\n"),
+            };
+            return NextResponse.json(newResult);
 
          case "transfer":
          case "swap":
@@ -191,4 +287,35 @@ export async function POST(request: Request) {
          { status: 500 }
       );
    }
+}
+
+async function openrouterRequest(
+   messages: { role: string; content: string }[],
+   model: string
+) {
+   const response = await fetch(
+      "https://openrouter.ai/api/v1/chat/completions",
+      {
+         method: "POST",
+         headers: {
+            Authorization:
+               "Bearer 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",
+            // "HTTP-Referer": "<YOUR_SITE_URL>",
+            // "X-Title": "<YOUR_SITE_NAME>",
+            "Content-Type": "application/json",
+         },
+         body: JSON.stringify({
+            model,
+            messages,
+         }),
+      }
+   );
+
+   const json = await response.json();
+   if (!response.ok) {
+      throw new Error(json.error || "Failed to fetch data");
+   }
+
+   const content = json.choices[0].message.content;
+   return content;
 }

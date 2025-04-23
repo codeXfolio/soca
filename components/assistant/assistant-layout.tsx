@@ -11,6 +11,8 @@ import {
 } from "./transaction-confirm-modal";
 import { ModelSelector, type AIModel } from "./model-selector";
 import { useRouter } from "next/navigation";
+import { ethers } from "ethers";
+import { fetchEthPrice } from "../helper";
 
 interface Message {
    id: string;
@@ -24,8 +26,7 @@ export function AssistantLayout() {
    const [messages, setMessages] = useState<Message[]>([
       {
          id: "welcome",
-         content:
-            "Hello! I'm your Soneium AI Assistant. How can I help you today?",
+         content: `Hello! I'm **SOCA**, your personal assistant. How can I help you today?`,
          sender: "ai",
          timestamp: new Date(),
       },
@@ -52,12 +53,14 @@ export function AssistantLayout() {
 
    // Add state for selected AI model
    const [selectedModel, setSelectedModel] = useState<AIModel>({
-      id: "gpt-4o",
-      name: "GPT-4o",
-      provider: "OpenAI",
-      description: "Most capable model for complex tasks",
-      contextLength: 128000,
+      id: "meta-llama/llama-4-maverick:free",
+      name: "Llama-4",
+      provider: "Meta",
+      description: "For general purpose tasks",
+      contextLength: 256000,
    });
+   const [action, setAction] = useState<string | null>(null);
+   const [data, setData] = useState<any>(null);
 
    useEffect(() => {
       const handleDismissTooltip = () => {
@@ -91,7 +94,14 @@ export function AssistantLayout() {
       };
    }, []);
 
-   const handleSendMessage = (content: string) => {
+   interface Txs {
+      hash: string;
+      timestamp: string;
+      amount: string;
+      type: string;
+      status: string;
+   }
+   const handleSendMessage = async (content: string) => {
       if (!content.trim()) return;
 
       // Add user message immediately for all messages
@@ -184,76 +194,90 @@ export function AssistantLayout() {
          return;
       }
 
-      if (
-         (lowerCaseMessage.includes("send") ||
-            lowerCaseMessage.includes("transfer")) &&
-         (lowerCaseMessage.includes("eth") || lowerCaseMessage.includes("usdc"))
-      ) {
-         // Determine token
-         const isEth = lowerCaseMessage.includes("eth");
+      const aiResponse = await getAIResponse(content, selectedModel);
+      setIsTyping(true);
 
-         // Parse amount if available
-         const amountMatch = isEth
-            ? content.match(/(\d+\.?\d*)\s*eth/i)
-            : content.match(/(\d+\.?\d*)\s*usdc/i);
-
-         const amount = amountMatch ? amountMatch[1] : isEth ? "0.1" : "100";
-
-         // Get recipient address if available, otherwise use a placeholder
-         const addressMatch = content.match(/(0x[a-fA-F0-9]{40})/);
-         const recipient = addressMatch ? addressMatch[1] : "0x1234...5678";
-
-         setTransactionDetails({
-            type: "transfer",
-            fromToken: {
-               symbol: isEth ? "ETH" : "USDC",
-               amount: amount,
-               value: isEth
-                  ? (Number.parseFloat(amount) * 3000).toString()
-                  : amount,
-            },
-            recipient: recipient,
-            estimatedGas: isEth ? "0.001 ETH ($3)" : "0.002 ETH ($6)",
-            network: "Ethereum",
-         });
-
-         // Send AI response first
-         setTimeout(() => {
-            const aiMessage: Message = {
+      if (aiResponse.error) {
+         setMessages((prev) => [
+            ...prev,
+            {
                id: `ai-${Date.now()}`,
-               content: `I'll help you transfer ${amount} ${
-                  isEth ? "ETH" : "USDC"
-               } to ${recipient}. Please review and confirm this transaction in the confirmation window.`,
+               content: aiResponse.error ? aiResponse.error : "Error",
                sender: "ai",
                timestamp: new Date(),
-            };
-
-            setMessages((prev) => [...prev, aiMessage]);
-            setIsTyping(false);
-
-            // Show transaction modal after response
-            setTimeout(() => {
-               setPendingMessage(content);
-               setShowTransactionModal(true);
-            }, 500);
-         }, 1000);
-
+            },
+         ]);
+         setIsTyping(false);
          return;
       }
 
-      // For non-transaction messages, just show typing and then respond
-      setIsTyping(true);
-      setTimeout(() => {
-         const aiMessage: Message = {
+      if (aiResponse.action === "transfer") {
+         const ethPrice = await fetchEthPrice();
+         setTransactionDetails({
+            type: "transfer",
+            fromToken: {
+               symbol: aiResponse.parameters.token,
+               amount: aiResponse.parameters.amount,
+               value: (
+                  Number.parseFloat(aiResponse.parameters.amount) * ethPrice
+               ).toFixed(3),
+            },
+            recipient: aiResponse.parameters.address,
+            estimatedGas: "0.0001 ETH ($0.1)",
+            network: "Soneium",
+         });
+         setMessages((prev) => [
+            ...prev,
+            {
+               id: `ai-${Date.now()}`,
+               content: aiResponse.response,
+               sender: "ai",
+               timestamp: new Date(),
+            },
+         ]);
+         setShowTransactionModal(true);
+         setIsTyping(false);
+         return;
+      }
+
+      if (aiResponse.action === "check_txs") {
+         const txs: Txs[] = aiResponse.data;
+         const formattedTxs = txs.map((tx) => {
+            const truncatedHash =
+               tx.hash.slice(0, 6) + "..." + tx.hash.slice(-4);
+            return `| ${truncatedHash} | ${
+               tx.type == null ? "transfer" : tx.type
+            } | ${ethers.formatEther(tx.amount)} ETH | ${new Date(
+               tx.timestamp
+            ).toLocaleString()} |`;
+         });
+         formattedTxs.unshift("| Hash | Type | Value | Time |\n|-|-|-|-|");
+         setMessages((prev) => [
+            ...prev,
+            {
+               id: `ai-${Date.now()}`,
+               content: aiResponse.response + "\n" + formattedTxs.join("\n"),
+               sender: "ai",
+               timestamp: new Date(),
+            },
+         ]);
+         setIsTyping(false);
+         return;
+      }
+
+      setMessages((prev) => [
+         ...prev,
+         {
             id: `ai-${Date.now()}`,
-            content: getAIResponse(content, selectedModel),
+            content:
+               typeof aiResponse === "string"
+                  ? aiResponse
+                  : aiResponse.response,
             sender: "ai",
             timestamp: new Date(),
-         };
-
-         setMessages((prev) => [...prev, aiMessage]);
-         setIsTyping(false);
-      }, 1000);
+         },
+      ]);
+      setIsTyping(false);
    };
 
    const handleConfirmTransaction = () => {
@@ -283,50 +307,36 @@ export function AssistantLayout() {
       }
    };
 
-   // Simple mock AI response function
-   const getAIResponse = (userMessage: string, model: AIModel): string => {
+   interface AIResponse {
+      action: string;
+      parameters: {
+         address: string;
+         amount: string;
+         token: string;
+      };
+      response: string;
+      error?: string;
+      data?: any;
+   }
+   const getAIResponse = async (
+      userMessage: string,
+      model: AIModel
+   ): Promise<AIResponse> => {
       const lowerCaseMessage = userMessage.toLowerCase();
       const modelInfo = `[Using ${model.name} by ${model.provider}] `;
 
-      if (
-         lowerCaseMessage.includes("hello") ||
-         lowerCaseMessage.includes("hi")
-      ) {
-         return "Hello! How can I assist you with your Web3 journey today?";
-      } else if (
-         lowerCaseMessage.includes("gas") ||
-         lowerCaseMessage.includes("fee")
-      ) {
-         return "Current gas fees on Ethereum are around 25 Gwei. Would you like me to help optimize your transaction?";
-      } else if (
-         lowerCaseMessage.includes("swap") ||
-         lowerCaseMessage.includes("exchange")
-      ) {
-         return "I can help you swap tokens. Please tell me which tokens you'd like to exchange and the amount. For example, 'Swap 0.1 ETH to USDC'.";
-      } else if (
-         lowerCaseMessage.includes("transfer") ||
-         lowerCaseMessage.includes("send")
-      ) {
-         return "I can help you transfer tokens. Please specify the token, amount, and recipient address. For example, 'Send 0.1 ETH to 0x1234...5678'.";
-      } else if (
-         lowerCaseMessage.includes("token") ||
-         lowerCaseMessage.includes("price")
-      ) {
-         return "I can fetch token prices for you. Which specific token are you interested in?";
-      } else if (lowerCaseMessage.includes("nft")) {
-         return "I can help you analyze NFT collections, check floor prices, or verify authenticity. What specific NFT information do you need?";
-      } else if (lowerCaseMessage.includes("wallet")) {
-         return "I can help you manage your wallet, check balances, or analyze transaction history. What would you like to know about your wallet?";
-      } else if (
-         lowerCaseMessage.includes("model") ||
-         lowerCaseMessage.includes("which model")
-      ) {
-         return `I'm currently using ${model.name} by ${
-            model.provider
-         }. This model ${model.description.toLowerCase()} and has a context length of ${model.contextLength.toLocaleString()} tokens. You can change the model using the selector at the top of the chat.`;
-      } else {
-         return "I understand you're asking about Web3. Could you provide more details about what you'd like to know or do?";
-      }
+      const response = await fetch("/api/assistant", {
+         method: "POST",
+         body: JSON.stringify({
+            messages: userMessage,
+            model: model.id,
+            signature: localStorage.getItem("signature"),
+         }),
+      });
+
+      const data: AIResponse = await response.json();
+
+      return data;
    };
 
    const handleOpenSettings = () => {
@@ -336,7 +346,7 @@ export function AssistantLayout() {
    return (
       <div className="flex h-full flex-col overflow-hidden">
          <div className="relative flex flex-1 flex-col overflow-hidden">
-            <div className="flex items-center justify-between border-b p-2">
+            <div className="flex items-center justify-between border-b px-2 pb-2">
                <div className="text-sm font-medium">AI Assistant</div>
                <ModelSelector
                   selectedModel={selectedModel}
@@ -348,7 +358,7 @@ export function AssistantLayout() {
             <CommandSuggestions onCommandClick={handleSendMessage} />
             <ChatInputBox onSendMessage={handleSendMessage} />
          </div>
-         {!window.localStorage.getItem("assistantTooltipDismissed") && (
+         {!localStorage.getItem("assistantTooltipDismissed") && (
             <AssistantToolTip />
          )}
 

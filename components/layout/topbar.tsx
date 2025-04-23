@@ -26,8 +26,13 @@ import {
    usePrivy,
    useWallets,
 } from "@privy-io/react-auth";
-import { useAppKit, useAppKitAccount } from "@reown/appkit/react";
+import {
+   useAppKit,
+   useAppKitAccount,
+   useAppKitProvider,
+} from "@reown/appkit/react";
 import { modalWc } from "@/app/context/appkit";
+import { BrowserProvider, Eip1193Provider } from "ethers";
 
 interface TopbarProps {
    onMenuToggle: () => void;
@@ -35,6 +40,7 @@ interface TopbarProps {
 
 export function Topbar({ onMenuToggle }: TopbarProps) {
    const { isConnected, address, allAccounts } = useAppKitAccount();
+   const { walletProvider } = useAppKitProvider("eip155");
    const { open } = useAppKit();
 
    const { theme, setTheme } = useTheme();
@@ -45,6 +51,20 @@ export function Topbar({ onMenuToggle }: TopbarProps) {
       );
       setTheme(mode);
    }
+
+   useEffect(() => {
+      async function getSignature() {
+         if (!localStorage.getItem("signature")) {
+            const provider = new BrowserProvider(
+               walletProvider as Eip1193Provider
+            );
+            const signer = await provider.getSigner();
+            const signature = await signer.signMessage("Welcome to SOCA");
+            localStorage.setItem("signature", signature);
+         }
+      }
+      getSignature();
+   }, [address]);
 
    return (
       <header className="sticky top-0 z-30 flex h-16 items-center border-b bg-card px-4 md:px-6">

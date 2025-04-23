@@ -23,6 +23,8 @@ import {
    Loader2,
    SendHorizontal,
 } from "lucide-react";
+import { useAppKitAccount, useAppKitProvider } from "@reown/appkit/react";
+import { BrowserProvider, Eip1193Provider, ethers } from "ethers";
 
 export interface TransactionDetails {
    type: "swap" | "transfer" | "approve";
@@ -61,21 +63,30 @@ export function TransactionConfirmModal({
 }: TransactionConfirmModalProps) {
    const [isSubmitting, setIsSubmitting] = useState(false);
    const [isSuccess, setIsSuccess] = useState(false);
+   const { address, isConnected } = useAppKitAccount();
+   const { walletProvider } = useAppKitProvider("eip155");
 
-   const handleConfirm = () => {
+   const handleConfirm = async () => {
       setIsSubmitting(true);
 
-      // Simulate transaction processing
-      setTimeout(() => {
-         setIsSubmitting(false);
-         setIsSuccess(true);
+      const provider = new BrowserProvider(walletProvider as Eip1193Provider);
+      const signer = await provider.getSigner();
 
-         // Close modal after showing success briefly
-         setTimeout(() => {
-            setIsSuccess(false);
-            onConfirm();
-         }, 2000);
-      }, 1500);
+      if (transaction.type === "transfer" && isConnected) {
+         const tx = await signer.sendTransaction({
+            to: transaction.recipient,
+            value: ethers.parseEther(transaction.fromToken?.amount || "0"),
+         });
+         await tx.wait();
+      }
+
+      setIsSubmitting(false);
+      setIsSuccess(true);
+
+      setTimeout(() => {
+         setIsSuccess(false);
+         onConfirm();
+      }, 2000);
    };
 
    const renderTransactionIcon = () => {
@@ -118,7 +129,7 @@ export function TransactionConfirmModal({
             if (!open && !isSubmitting) onClose();
          }}
       >
-         <DialogContent className="sm:max-w-[425px]">
+         <DialogContent className="sm:max-w-[525px]">
             <DialogHeader>
                <DialogTitle className="flex items-center gap-2">
                   <div className="rounded-full bg-primary/10 p-1">
