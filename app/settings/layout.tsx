@@ -1,10 +1,10 @@
-import type React from "react"
-import { AppLayout } from "@/components/layout/app-layout"
+import type React from "react";
+import { AppLayout } from "@/components/layout/app-layout";
 
 export default function SettingsLayout({
-  children,
+   children,
 }: {
-  children: React.ReactNode
+   children: React.ReactNode;
 }) {
-  return <AppLayout>{children}</AppLayout>
+   return <AppLayout>{children}</AppLayout>;
 }

@@ -322,9 +322,6 @@ export function AssistantLayout() {
       userMessage: string,
       model: AIModel
    ): Promise<AIResponse> => {
-      const lowerCaseMessage = userMessage.toLowerCase();
-      const modelInfo = `[Using ${model.name} by ${model.provider}] `;
-
       const response = await fetch("/api/assistant", {
          method: "POST",
          body: JSON.stringify({
@@ -358,9 +355,6 @@ export function AssistantLayout() {
             <CommandSuggestions onCommandClick={handleSendMessage} />
             <ChatInputBox onSendMessage={handleSendMessage} />
          </div>
-         {!localStorage.getItem("assistantTooltipDismissed") && (
-            <AssistantToolTip />
-         )}
 
          <TransactionConfirmModal
             isOpen={showTransactionModal}

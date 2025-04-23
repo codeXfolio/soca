@@ -5,20 +5,10 @@ import { ThemeSelector } from "./theme-selector";
 import { LanguageSelector } from "./language-selector";
 import { ApiKeysSettings } from "./api-keys-settings";
 import { Card } from "@/components/ui/card";
-import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 
 export function SettingsLayout() {
-   const searchParams = useSearchParams();
    const [activeTab, setActiveTab] = useState("account");
-
-   useEffect(() => {
-      // Check if there's a tab parameter in the URL
-      const tabParam = searchParams.get("tab");
-      if (tabParam) {
-         setActiveTab(tabParam);
-      }
-   }, [searchParams]);
 
    return (
       <Tabs
