@@ -45,7 +45,11 @@ export async function GET(request: NextRequest) {
       });
    }
 
-   const result: string = await openrouterRequest(sc.join("\n"), promptScan);
+   const result: string = await openrouterRequest(
+      sc.join("\n"),
+      promptScan,
+      "meta-llama/llama-4-maverick:free"
+   );
    const output = result.replace("```json", "").replace("```", "");
 
    return NextResponse.json({

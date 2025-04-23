@@ -85,13 +85,6 @@ export function SidebarNavigation({
                         Settings
                      </Link>
                   </Button>
-                  <Button
-                     variant="ghost"
-                     className="w-full justify-start text-muted-foreground"
-                  >
-                     <LogOut className="mr-2 h-4 w-4" />
-                     Disconnect
-                  </Button>
                </div>
             </div>
          </div>

@@ -298,10 +298,7 @@ async function openrouterRequest(
       {
          method: "POST",
          headers: {
-            Authorization:
-               "Bearer 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",
-            // "HTTP-Referer": "<YOUR_SITE_URL>",
-            // "X-Title": "<YOUR_SITE_NAME>",
+            Authorization: `Bearer ${process.env.OPENROUTER_API_KEY}`,
             "Content-Type": "application/json",
          },
          body: JSON.stringify({
