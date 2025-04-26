@@ -190,7 +190,7 @@ export async function POST(request: Request) {
       });
       prompt.unshift({
          role: "system",
-         content: systemPrompt,
+         content: systemPrompt + "\n- User address: " + verified,
       });
 
       const result = await openrouterRequest(prompt, model);
