@@ -119,9 +119,10 @@ export function DashboardOverview() {
          tokens.unshift({
             symbol: "ETH",
             name: "Ethereum",
-            amount: parseFloat(ethers.formatEther(data2.coin_balance)),
+            amount: parseFloat(ethers.formatEther(data2.coin_balance || 0)),
             value:
-               parseFloat(ethers.formatEther(data2.coin_balance)) * ethPrice,
+               parseFloat(ethers.formatEther(data2.coin_balance || 0)) *
+               ethPrice,
          });
          setPortfolio(tokens);
       }

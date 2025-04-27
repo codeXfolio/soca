@@ -19,6 +19,9 @@ const metadata = {
 // 3. Create the AppKit instance
 export const modalWc = createAppKit({
    adapters: [new EthersAdapter()],
+   defaultAccountTypes: {
+      eip155: "eoa",
+   },
    metadata,
    networks: [soneium, soneiumMinato],
    projectId,
